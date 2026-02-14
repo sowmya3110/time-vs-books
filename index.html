@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="See which books from your Goodreads TBR you could have read instead of scrolling">
+    <link rel="manifest" href="manifest.json">
+    <title>Time vs Books - What Could You Have Read?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #ec4899 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            padding: 50px;
+            position: relative;
+        }
+
+        .warning-banner {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #1e293b;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 1.1em;
+            margin-bottom: 40px;
+        }
+
+        .time-display {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .time-label {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .time-value {
+            font-size: 4em;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9em;
+        }
+
+        .books-section {
+            background: #f1f5f9;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .books-title {
+            font-size: 1.5em;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .book-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #6366f1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+
+        .book-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .book-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .book-author {
+            color: #64748b;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .book-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .info-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+            color: #78350f;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 1s ease;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .time-value {
+                font-size: 3em;
+            }
+
+            .stat-number {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning-banner" id="warningBanner">
+            ⏰ You've been here for <span id="warningTime">0s</span> - imagine what you could read instead!
+        </div>
+
+        <h1>📱 vs 📚</h1>
+        <p class="subtitle">See which books from your Goodreads TBR you could have read</p>
+
+        <div class="time-display">
+            <div class="time-label">Time on This Screen</div>
+            <div class="time-value" id="timeDisplay">00:00:00</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="wordsRead">0</div>
+                <div class="stat-label">Words You Could've Read</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pagesRead">0</div>
+                <div class="stat-label">Pages Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="booksRead">0.0</div>
+                <div class="stat-label">Books Finished</div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>💡 Did you know?</strong> The average person reads 200-250 words per minute. 
+            We're using 225 WPM to calculate what you could have read during this time.
+            A typical book has ~300 words per page and ~250 pages.
+        </div>
+
+        <div class="books-section">
+            <div class="books-title">
+                📖 Books You Could Have Read:
+            </div>
+            <div id="booksList">
+                <div class="empty-state">
+                    Stay on this page for a bit and we'll show you what books you could have read! ⏳
+                </div>
+            </div>
+            <div class="progress-bar" id="progressBarContainer" style="display: none;">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div id="currentBookInfo" style="margin-top: 15px; color: #64748b; font-size: 0.9em; text-align: center;"></div>
+        </div>
+
+        <button class="reset-btn" onclick="resetTimer()">
+            🔄 Reset Timer
+        </button>
+    </div>
+
+    <script>
+        // Reading speed constants
+        const WORDS_PER_MINUTE = 225;
+        const WORDS_PER_PAGE = 300;
+        const PAGES_PER_BOOK = 250;
+        const WORDS_PER_BOOK = WORDS_PER_PAGE * PAGES_PER_BOOK; // 75,000 words
+
+        // Book database with actual page counts and reading times
+        const books = [
+            { title: "Huis clos (LARA edition)", author: "Jean-Paul Sartre", pages: 60, category: "From Your TBR" },
+            { title: "What the Storm Means: Prologue to The Gathering Storm", author: "Robert Jordan", pages: 64, category: "From Your TBR" },
+            { title: "By Grace and Banners Fallen: Prologue to A Memory of Light (Wheel of Time)", author: "Robert Jordan", pages: 74, category: "From Your TBR" },
+            { title: "Meanwhile", author: "Jason Shiga", pages: 80, category: "From Your TBR" },
+            { title: "The Death of Ivan Ilych", author: "Leo Tolstoy", pages: 86, category: "From Your TBR" },
+            { title: "A Fire Within the Ways", author: "Robert Jordan", pages: 91, category: "From Your TBR" },
+            { title: "The Strange Library", author: "Haruki Murakami", pages: 96, category: "From Your TBR" },
+            { title: "Annihilation of Caste: The Annotated Critical Edition", author: "B.R. Ambedkar", pages: 100, category: "From Your TBR" },
+            { title: "The Dead", author: "James Joyce", pages: 100, category: "From Your TBR" },
+            { title: "The Cemetery in Barnes", author: "Gabriel Josipovici", pages: 104, category: "From Your TBR" },
+            { title: "Glimmers: Prologue to Crossroads of Twilight (Wheel of Time)", author: "Robert Jordan", pages: 107, category: "From Your TBR" },
+            { title: "Of Mice and Men", author: "John Steinbeck", pages: 107, category: "From Your TBR" },
+            { title: "On the Meaning of Life", author: "Will Durant", pages: 116, category: "From Your TBR" },
+            { title: "The Prophet", author: "Kahlil Gibran", pages: 127, category: "From Your TBR" },
+            { title: "Broke To Breakthrough: The Rise of India\'s Largest Private Dairy Company", author: "Harish Damodaran", pages: 134, category: "From Your TBR" },
+            { title: "The Orestia", author: "Aeschylus", pages: 136, category: "From Your TBR" },
+            { title: "This Is Water: Some Thoughts, Delivered on a Significant Occasion, about Living a Compassionate Life", author: "David Foster Wallace", pages: 138, category: "From Your TBR" },
+            { title: "Zen Mind, Beginner\'s Mind: Informal Talks on Zen Meditation and Practice", author: "Shunryu Suzuki", pages: 138, category: "From Your TBR" },
+            { title: "Beasts of No Nation", author: "Uzodinma Iweala", pages: 142, category: "From Your TBR" },
+            { title: "The Double Helix", author: "James D. Watson", pages: 143, category: "From Your TBR" },
+            { title: "A Happy Death", author: "Albert Camus", pages: 144, category: "From Your TBR" },
+            { title: "The Fall (Vintage International)", author: "Albert Camus", pages: 147, category: "From Your TBR" },
+            { title: "Fahrenheit 451", author: "Ray Bradbury", pages: 158, category: "From Your TBR" },
+            { title: "Giovanni’s Room", author: "James Baldwin", pages: 159, category: "From Your TBR" },
+            { title: "The Art of War", author: "Sun Tzu", pages: 170, category: "From Your TBR" },
+            { title: "Time\'s Echo (The Chronos Files #1.5)", author: "Rysa Walker", pages: 175, category: "From Your TBR" },
+            { title: "Nausea", author: "Jean-Paul Sartre", pages: 178, category: "From Your TBR" },
+            { title: "Poonachi: Or the Story of a Black Goat", author: "Perumal Murugan", pages: 179, category: "From Your TBR" },
+            { title: "The English Teacher", author: "R.K. Narayan", pages: 180, category: "From Your TBR" },
+            { title: "Lord of the Flies", author: "William Golding", pages: 182, category: "From Your TBR" },
+            { title: "The Conquest of Happiness", author: "Bertrand Russell", pages: 183, category: "From Your TBR" },
+            { title: "I Was a Doctor in Auschwitz", author: "Gisella Perl", pages: 189, category: "From Your TBR" },
+            { title: "The Sun Also Rises", author: "Ernest Hemingway", pages: 189, category: "From Your TBR" },
+            { title: "The Penultimate Truth", author: "Philip K. Dick", pages: 191, category: "From Your TBR" },
+            { title: "After Dark", author: "Haruki Murakami", pages: 191, category: "From Your TBR" },
+            { title: "Six Days of the Condor", author: "James Grady", pages: 192, category: "From Your TBR" },
+            { title: "The Character of Physical Law", author: "Richard P. Feynman", pages: 192, category: "From Your TBR" },
+            { title: "The Magic of Believing", author: "Claude M. Bristol", pages: 192, category: "From Your TBR" },
+            { title: "The Myth of Sisyphus", author: "Albert Camus", pages: 192, category: "From Your TBR" },
+            { title: "The Hitchhiker’s Guide to the Galaxy (The Hitchhiker\'s Guide to the Galaxy, #1)", author: "Douglas Adams", pages: 193, category: "From Your TBR" },
+            { title: "Zero to One: Notes on Startups, or How to Build the Future", author: "Peter Thiel", pages: 195, category: "From Your TBR" },
+            { title: "The Great Derangement: Climate Change and the Unthinkable", author: "Amitav Ghosh", pages: 196, category: "From Your TBR" },
+            { title: "The Tartar Steppe", author: "Dino Buzzati", pages: 198, category: "From Your TBR" },
+            { title: "Sway: The Irresistible Pull of Irrational Behavior", author: "Ori Brafman", pages: 206, category: "From Your TBR" },
+            { title: "Into the Wild", author: "Jon Krakauer", pages: 207, category: "From Your TBR" },
+            { title: "Things I Have Withheld", author: "Kei Miller", pages: 208, category: "From Your TBR" },
+            { title: "The Myth of Sisyphus and Other Essays", author: "Albert Camus", pages: 212, category: "From Your TBR" },
+            { title: "Exile and the Kingdom", author: "Albert Camus", pages: 213, category: "From Your TBR" },
+            { title: "The Hitchhiker’s Guide to the Galaxy (Hitchhiker\'s Guide to the Galaxy, #1)", author: "Douglas Adams", pages: 216, category: "From Your TBR" },
+            { title: "On Palestine", author: "Noam Chomsky", pages: 220, category: "From Your TBR" },
+            { title: "Everyday Zen: Love & Work", author: "Charlotte Joko Beck", pages: 224, category: "From Your TBR" },
+            { title: "Caligula", author: "Albert Camus", pages: 224, category: "From Your TBR" },
+            { title: "A Brief History of Time", author: "Stephen W. Hawking", pages: 226, category: "From Your TBR" },
+            { title: "The Curious Incident of the Dog in the Night-Time", author: "Mark Haddon", pages: 226, category: "From Your TBR" },
+            { title: "The Year of Magical Thinking", author: "Joan Didion", pages: 227, category: "From Your TBR" },
+            { title: "Why Bharat Matters", author: "S. Jaishankar", pages: 237, category: "From Your TBR" },
+            { title: "Inferno (Inferno, #1)", author: "Larry Niven", pages: 237, category: "From Your TBR" },
+            { title: "Who Ate the First Oyster?: The Extraordinary People Behind the Greatest Firsts in History", author: "Cody Cassidy", pages: 240, category: "From Your TBR" },
+            { title: "Before The Big Bang: The Origin of the Universe and What Lies Beyond", author: "Laura Mersini-Houghton", pages: 240, category: "From Your TBR" },
+            { title: "Identity: The Demand for Dignity and the Politics of Resentment", author: "Francis Fukuyama", pages: 240, category: "From Your TBR" },
+            { title: "Matilda", author: "Roald Dahl", pages: 240, category: "From Your TBR" },
+            { title: "VALIS", author: "Philip K. Dick", pages: 242, category: "From Your TBR" },
+            { title: "The Outsiders: Eight Unconventional CEOs and Their Radically Rational Blueprint for Success", author: "William N. Thorndike Jr.", pages: 251, category: "From Your TBR" },
+            { title: "Letters from a Stoic", author: "Seneca", pages: 254, category: "From Your TBR" },
+            { title: "Prisoners of Geography: Ten Maps That Tell You Everything You Need to Know About Global Politics (Politics of Place, #1)", author: "Tim  Marshall", pages: 256, category: "From Your TBR" },
+            { title: "The Future of Geography: How Power and Politics in Space Will Change Our World", author: "Tim  Marshall", pages: 256, category: "From Your TBR" },
+            { title: "Our Moon Has Blood Clots: The Exodus of the Kashmiri Pandits", author: "Rahul Pandita", pages: 258, category: "From Your TBR" },
+            { title: "No Place to Hide: Edward Snowden, the NSA, and the U.S. Surveillance State", author: "Glenn Greenwald", pages: 260, category: "From Your TBR" },
+            { title: "Frankenstein: The 1818 Text", author: "Mary Wollstonecraft Shelley", pages: 260, category: "From Your TBR" },
+            { title: "On Intelligence", author: "Jeff Hawkins", pages: 261, category: "From Your TBR" },
+            { title: "Doctors Are More Harmful Than Germs: How Surgery Can Be Hazardous to Your Health - And What to Do About It", author: "Harvey Bigelsen", pages: 264, category: "From Your TBR" },
+            { title: "When Genius Failed: The Rise and Fall of Long-Term Capital Management", author: "Roger Lowenstein", pages: 264, category: "From Your TBR" },
+            { title: "The Paradox of Choice: Why More Is Less", author: "Barry Schwartz", pages: 265, category: "From Your TBR" },
+            { title: "Ishmael: An Adventure of the Mind and Spirit (Ishmael, #1)", author: "Daniel Quinn", pages: 266, category: "From Your TBR" },
+            { title: "It Happened In India: The Story of Pantaloons, Big Bazaar, Central and the Great Indian Consumer", author: "Kishore Biyani", pages: 268, category: "From Your TBR" },
+            { title: "Correction", author: "Thomas Bernhard", pages: 271, category: "From Your TBR" },
+            { title: "The C Programming Language", author: "Brian W. Kernighan", pages: 272, category: "From Your TBR" },
+            { title: "The Hidden Life of Trees: What They Feel, How They Communicate: Discoveries from a Secret World", author: "Peter Wohlleben", pages: 272, category: "From Your TBR" },
+            { title: "The Sun Does Shine: How I Found Life and Freedom on Death Row", author: "Anthony Ray Hinton", pages: 272, category: "From Your TBR" },
+            { title: "Never Split the Difference: Negotiating As If Your Life Depended On It", author: "Chris Voss", pages: 274, category: "From Your TBR" },
+            { title: "A Venetian at the Mughal Court: The Life and Adventures of Nicolò Manucci", author: "Marco Moneta", pages: 276, category: "From Your TBR" },
+            { title: "Behind the Beautiful Forevers: Life, Death, and Hope in a Mumbai Undercity", author: "Katherine Boo", pages: 278, category: "From Your TBR" },
+            { title: "Rework", author: "Jason Fried", pages: 279, category: "From Your TBR" },
+            { title: "Blood Diamonds: Tracing the Deadly Path of the World\'s Most Precious Stones", author: "Greg Campbell", pages: 280, category: "From Your TBR" },
+            { title: "The Diary of a Young Girl", author: "Anne Frank", pages: 283, category: "From Your TBR" },
+            { title: "The Fish That Ate the Whale: The Life and Times of America\'s Banana King", author: "Rich Cohen", pages: 288, category: "From Your TBR" },
+            { title: "Boom, Bust, Boom: A Story About Copper, the Metal that Runs the World", author: "Bill Carter", pages: 288, category: "From Your TBR" },
+            { title: "\"What Do You Care What Other People Think?\": Further Adventures of a Curious Character", author: "Richard P. Feynman", pages: 288, category: "From Your TBR" },
+            { title: "The Courage to Be Disliked: How to Free Yourself, Change Your Life and Achieve Real Happiness", author: "Ichiro Kishimi", pages: 288, category: "From Your TBR" },
+            { title: "The Glass Castle", author: "Jeannette Walls", pages: 288, category: "From Your TBR" },
+            { title: "I Know Why the Caged Bird Sings (Maya Angelou\'s Autobiography, #1)", author: "Maya Angelou", pages: 289, category: "From Your TBR" },
+            { title: "The New Jim Crow: Mass Incarceration in the Age of Colorblindness", author: "Michelle Alexander", pages: 290, category: "From Your TBR" },
+            { title: "The Complete Maus", author: "Art Spiegelman", pages: 296, category: "From Your TBR" },
+            { title: "Zealot: The Life and Times of Jesus of Nazareth", author: "Reza Aslan", pages: 296, category: "From Your TBR" },
+            { title: "All Quiet on the Western Front", author: "Erich Maria Remarque", pages: 296, category: "From Your TBR" },
+            { title: "The Lady with the Dog and Other Stories (Tales of Chekhov #3)", author: "Anton Chekhov", pages: 300, category: "From Your TBR" },
+            { title: "Chatter: Dispatches from the Secret World of Global Eavesdropping", author: "Patrick Radden Keefe", pages: 300, category: "From Your TBR" },
+            { title: "The World of Robert Jordan\'s the Wheel of Time", author: "Robert Jordan", pages: 304, category: "From Your TBR" },
+            { title: "Flash Boys: A Wall Street Revolt", author: "Michael   Lewis", pages: 304, category: "From Your TBR" },
+            { title: "Breaking the Maya Code", author: "Michael D. Coe", pages: 304, category: "From Your TBR" }
+        ];
+
+        // Sort books by page count
+        books.sort((a, b) => a.pages - b.pages);
+
+        let startTime = Date.now();
+        let elapsedSeconds = 0;
+
+        function updateTimer() {
+            elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            
+            // Update time display
+            const hours = Math.floor(elapsedSeconds / 3600);
+            const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+            const seconds = elapsedSeconds % 60;
+            
+            document.getElementById('timeDisplay').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            document.getElementById('warningTime').textContent = 
+                elapsedSeconds < 60 ? `${elapsedSeconds}s` : 
+                elapsedSeconds < 3600 ? `${Math.floor(elapsedSeconds / 60)}m ${seconds}s` :
+                `${hours}h ${minutes}m`;
+
+            // Calculate reading stats
+            const minutesElapsed = elapsedSeconds / 60;
+            const wordsRead = Math.floor(minutesElapsed * WORDS_PER_MINUTE);
+            const pagesRead = Math.floor(wordsRead / WORDS_PER_PAGE);
+            const booksRead = (wordsRead / WORDS_PER_BOOK).toFixed(2);
+
+            document.getElementById('wordsRead').textContent = wordsRead.toLocaleString();
+            document.getElementById('pagesRead').textContent = pagesRead.toLocaleString();
+            document.getElementById('booksRead').textContent = booksRead;
+
+            // Update books list
+            updateBooksList(pagesRead, wordsRead);
+        }
+
+        function updateBooksList(totalPages, totalWords) {
+            const booksListContainer = document.getElementById('booksList');
+            const progressBarContainer = document.getElementById('progressBarContainer');
+            const progressBar = document.getElementById('progressBar');
+            const currentBookInfo = document.getElementById('currentBookInfo');
+
+            // Find books that could be completed
+            const completedBooks = books.filter(book => {
+                const bookWords = book.pages * WORDS_PER_PAGE;
+                return totalWords >= bookWords;
+            });
+
+            // Find the current book being "read"
+            const currentBook = books.find(book => {
+                const bookWords = book.pages * WORDS_PER_PAGE;
+                return totalWords < bookWords;
+            });
+
+            if (completedBooks.length === 0 && !currentBook) {
+                booksListContainer.innerHTML = `
+                    <div class="empty-state">
+                        Stay on this page for a bit and we'll show you what books you could have read! ⏳
+                    </div>
+                `;
+                progressBarContainer.style.display = 'none';
+                return;
+            }
+
+            // Show completed books
+            if (completedBooks.length > 0) {
+                booksListContainer.innerHTML = completedBooks.slice(-5).reverse().map(book => {
+                    const readingTime = Math.ceil((book.pages * WORDS_PER_PAGE) / WORDS_PER_MINUTE);
+                    return `
+                        <div class="book-item">
+                            <div class="book-title">✓ ${book.title}</div>
+                            <div class="book-author">by ${book.author}</div>
+                            <div class="book-meta">
+                                <span>📄 ${book.pages} pages</span>
+                                <span>⏱️ ${readingTime} min read</span>
+                                <span>📚 ${book.category}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (completedBooks.length > 5) {
+                    booksListContainer.innerHTML += `
+                        <div style="text-align: center; color: #64748b; margin-top: 15px; font-size: 0.9em;">
+                            ... and ${completedBooks.length - 5} more book${completedBooks.length - 5 > 1 ? 's' : ''}!
+                        </div>
+                    `;
+                }
+            } else {
+                booksListContainer.innerHTML = '';
+            }
+
+            // Show current book progress
+            if (currentBook) {
+                const bookWords = currentBook.pages * WORDS_PER_PAGE;
+                const progressPercent = Math.min((totalWords / bookWords) * 100, 100);
+                const pagesCompleted = Math.floor((totalWords / WORDS_PER_PAGE));
+                
+                progressBarContainer.style.display = 'block';
+                progressBar.style.width = progressPercent + '%';
+                
+                const remainingPages = currentBook.pages - pagesCompleted;
+                const remainingMinutes = Math.ceil((remainingPages * WORDS_PER_PAGE) / WORDS_PER_MINUTE);
+                
+                currentBookInfo.innerHTML = `
+                    Currently reading: <strong>${currentBook.title}</strong> by ${currentBook.author}<br>
+                    Progress: ${pagesCompleted} / ${currentBook.pages} pages (${progressPercent.toFixed(1)}%)<br>
+                    ${remainingMinutes} minutes until completion
+                `;
+            } else {
+                progressBarContainer.style.display = 'none';
+                currentBookInfo.innerHTML = `
+                    🎉 Amazing! You could have read <strong>${completedBooks.length} book${completedBooks.length > 1 ? 's' : ''}</strong> in this time!
+                `;
+            }
+        }
+
+        function resetTimer() {
+            if (confirm('Are you sure you want to reset the timer? This will clear all progress.')) {
+                startTime = Date.now();
+                elapsedSeconds = 0;
+                updateTimer();
+            }
+        }
+
+        // Update every second
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>
